@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "ScanQR",
+    "slug": "ScanQR",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/codigo-qr.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "scanqr",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "icon": "./assets/codigo-qr.png"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/codigo-qr.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/codigo-qr.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+      "expo-sqlite",
+      {
+        "enableFTS": true,
+        "useSQLCipher": true
+      }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#C02060"
+        }
+      ]
+    ]
+  }
+}
