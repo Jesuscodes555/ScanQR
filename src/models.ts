@@ -1,5 +1,6 @@
 export interface ScannedCode {
-    id: string; 
-    data: string;
-    type: string;
+  id: string
+  data: string
+  type: string
+  timestamp?: number
 }
