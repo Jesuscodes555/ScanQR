@@ -13,8 +13,8 @@ import { connectDb, Database } from "../src/database";
 import { ScannedCode } from "../src/models";
 
 // === CONFIGURACIÓN DE MODO LOCAL ===
-// Cambia esta variable a false cuando quieras conectarte al servidor
-const isLocalMode = false;
+// Cambiar esta variable a false cuando se quiera conectar al servidor
+const isLocalMode = true;
 
 // URL del servidor web - Solo se usará si isLocalMode es false
 const API_URL = 'http://localhost:3000'; 
@@ -50,7 +50,6 @@ export default () => {
     const [isSyncing, setIsSyncing] = useState(false);
 
     // === EFECTOS ===
-    // Este efecto se ejecuta una vez al montar el componente
     useEffect(() => {
         // Función para obtener la ubicación actual
         async function getCurrentLocation() {
@@ -387,20 +386,23 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        padding: 16,
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        padding: 12,
         backgroundColor: '#fff',
         borderBottomWidth: 1,
         borderBottomColor: '#e0e0e0',
     },
     button: {
+        flex: 1, 
+        marginHorizontal: 4,
         backgroundColor: '#00879E',
+        paddingVertical: 10,
+        paddingHorizontal: 8,
         borderRadius: 8,
-        padding: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        flexDirection: 'row',
-        minWidth: 100,
+        flexDirection: 'column', 
     },
     syncButton: {
         backgroundColor: '#27ae60',
