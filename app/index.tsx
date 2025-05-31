@@ -12,7 +12,7 @@ import type { ScannedCode } from "../src/models"
 
 // === CONFIGURACIÓN DE MODO LOCAL ===
 const isLocalMode = true // Cambiar: a true para activar el modo local, false para modo servidor
-// Si es modo local, no se sincronizará con el servidor, de todos modos ahí dice en el header de la app 
+// Si es modo local, no se sincronizará con el servidor, de todos modos en el header de la app sale 
 const API_URL = "http://192.168.1.76:3000" //CAMBIAR ESTO POR LA IP DE LA RED  PARA QUE JALE EN IOS/ANDROID
 
 // Configuración del manejador de notificaciones
@@ -44,10 +44,7 @@ export default function QRScannerScreen() {
   // === REFS PARA CONTROL DE ESCANEO ===
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isProcessingRef = useRef<boolean>(false)
-
-  // === CONSTANTES DE CONFIGURACIÓN ===
-  const SCAN_COOLDOWN = 3000 // 3 segundos entre escaneos del mismo código
-  const PROCESSING_TIMEOUT = 1000 // 1 segundo para procesar un escaneo
+  isProcessingRef.current = false // Inicialmente no estamos procesando
 
   useEffect(() => {
     async function getCurrentLocation() {
@@ -64,13 +61,15 @@ export default function QRScannerScreen() {
     async function retrieveLocalDbData() {
       try {
         const database = await connectDb()
-        setDB(database)
-        await updateData(database)
+        setDB(database);
+        const codes = await database.consultarCodigos();
+        setScannedCodes(codes);
+        await updateData(database);
       } catch (error) {
         console.error("Error conectando a la base de datos:", error)
         Alert.alert("Error", "No se pudo conectar a la base de datos")
       }
-    }
+    };
 
     getCurrentLocation()
     retrieveLocalDbData()
@@ -96,29 +95,36 @@ export default function QRScannerScreen() {
   }
 
 
-  // === FUNCIÓN DE ESCANEO ===
+  // === FUNCIÓN DE ESCANEO PARA LOS CÓDIGOS ===
   const onBarcodeScanned = async function (result: BarcodeScanningResult) {
-    //Tratar de evitar escaneos del mismo código
-    if (!isScanning) return;
+    // Evitar escaneos duplicados 
+    if (!isScanning || isProcessingRef.current) return;
 
-    //Desactivar el escaneo 
-    setIsScanning(false)
+    // Marcar como procesando
+    isProcessingRef.current = true;
+    setIsScanning(false);
 
-    //Reactivar el escaneo después de un timeout
-    setTimeout(() => {
-      setIsScanning(true)
-    }, 1000)  
+    try {
+      // Notificación con el código escaneado
+      await showNotification(`Código escaneado: ${result.data}`);
 
-    //Notificación con el código escaneado
-    await showNotification(`Código escaneado: ${result.data}`)
-
-    //Guardamos en la base de datos LOCAL
-    if (db) {
-      await db.insertarCodigo(result.data, result.type)
-      setScannedCodes(await db.consultarCodigos())
-      await updateData(db)
+      // Guardar en la base de datos LOCAL
+      if (db) {
+        await db.insertarCodigo(result.data, result.type);
+        const updatedCodes = await db.consultarCodigos();
+        setScannedCodes(updatedCodes);
+        await updateData(db);
+      }
+    } catch (error) {
+      console.error("Error al procesar código:", error);
+      Alert.alert("Error", "No se pudo guardar el código escaneado");
+    } finally {
+      // Reactivar el escaneo después de un timeout
+      setTimeout(() => {
+        isProcessingRef.current = false;
+        setIsScanning(true);
+      }, 1000); // Esperar 1 segundo antes de permitir otro escaneo
     }
-
   }
     
   // === FUNCIÓN DE SINCRONIZACIÓN ===
@@ -235,6 +241,8 @@ export default function QRScannerScreen() {
     }
   }
 
+
+
   // === VERIFICACIÓN DE PERMISOS ===
   if (!permission) {
     return <View style={styles.container} />
@@ -258,7 +266,7 @@ export default function QRScannerScreen() {
   }
 
   // === COMPONENTE PARA ITEMS DE LA LISTA ===
-  const ScannedItem = ({ item }: { item: ScannedCode }) => {
+  const ScannedItem = function ({ item }: { item: ScannedCode })  {
     const onCopyPress = () => {
       Clipboard.setStringAsync(item.data)
       Alert.alert("Copiado", "Texto copiado al portapapeles")
