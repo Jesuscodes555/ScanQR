@@ -33,6 +33,7 @@ export default function QRScannerScreen() {
   const [permission, requestPermission] = useCameraPermissions()
   const [scannedCodes, setScannedCodes] = useState<ScannedCode[]>([])
   const [db, setDB] = useState<Database>()
+  const [isScanning, setIsScanning] = useState(true) // Estado para controlar el escaneo
   const [isSyncing, setIsSyncing] = useState(false)
   const [stats, setStats] = useState<{ total: number; porTipo: any[]; ultimoEscaneo: string | null }>({
     total: 0,
@@ -41,8 +42,6 @@ export default function QRScannerScreen() {
   })
 
   // === REFS PARA CONTROL DE ESCANEO ===
-  const lastScannedCode = useRef<string>("")
-  const lastScannedTime = useRef<number>(0)
   const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const isProcessingRef = useRef<boolean>(false)
 
@@ -96,56 +95,32 @@ export default function QRScannerScreen() {
     }
   }
 
+
   // === FUNCIÓN DE ESCANEO ===
-  const onBarcodeScanned = async (result: BarcodeScanningResult) => {
-    const currentTime = Date.now()
-    const scannedData = result.data
+  const onBarcodeScanned = async function (result: BarcodeScanningResult) {
+    //Tratar de evitar escaneos del mismo código
+    if (!isScanning) return;
 
-    //Verificar si ya estamos procesando
-    if (isProcessingRef.current) {
-      console.log("Escaneo ignorado: ya procesando")
-      return
+    //Desactivar el escaneo 
+    setIsScanning(false)
+
+    //Reactivar el escaneo después de un timeout
+    setTimeout(() => {
+      setIsScanning(true)
+    }, 1000)  
+
+    //Notificación con el código escaneado
+    await showNotification(`Código escaneado: ${result.data}`)
+
+    //Guardamos en la base de datos LOCAL
+    if (db) {
+      await db.insertarCodigo(result.data, result.type)
+      setScannedCodes(await db.consultarCodigos())
+      await updateData(db)
     }
 
-    //Verificar si es el mismo código muy reciente
-    if (lastScannedCode.current === scannedData && currentTime - lastScannedTime.current < SCAN_COOLDOWN) {
-      console.log("scaneo ignorado: mismo código muy reciente")
-      return
-    }
-
-    //Marcar como procesando
-    isProcessingRef.current = true
-    lastScannedCode.current = scannedData
-    lastScannedTime.current = currentTime
-
-    console.log("Procesando escaneo:", scannedData)
-
-    try {
-      if (db) {
-        const existe = await db.existeCodigo(scannedData)
-        if (existe) {
-          await showNotification(`Código ya escaneado: ${scannedData}`)
-        } else {
-          // Mostrar notificación
-          await showNotification(`Nuevo código escaneado: ${scannedData}`)
-
-          // Guardar en base de datos
-          await db.insertarCodigo(scannedData, result.type)
-          await updateData(db)
-        }
-      }
-    } catch (error) {
-      console.error("Error procesando escaneo:", error)
-      Alert.alert("Error", "No se pudo procesar el código escaneado")
-    } finally {
-      //LIBERAR DESPUÉS DEL TIMEOUT
-      scanTimeoutRef.current = setTimeout(() => {
-        isProcessingRef.current = false
-        console.log("Escaneo desbloqueado")
-      }, PROCESSING_TIMEOUT)
-    }
   }
-
+    
   // === FUNCIÓN DE SINCRONIZACIÓN ===
   const syncWithServer = async () => {
     if (!scannedCodes.length) {
@@ -538,7 +513,7 @@ const styles = StyleSheet.create({
     minHeight: 50,
   },
   syncButton: {
-    backgroundColor: "#27ae60",
+    backgroundColor: "#328E6E",
   },
   clearButton: {
     backgroundColor: "#e74c3c",
