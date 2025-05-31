@@ -11,8 +11,9 @@ import { connectDb, type Database } from "../src/database"
 import type { ScannedCode } from "../src/models"
 
 // === CONFIGURACIÓN DE MODO LOCAL ===
-const isLocalMode = true
-const API_URL = "http://localhost:3000"
+const isLocalMode = true // Cambiar: a true para activar el modo local, false para modo servidor
+// Si es modo local, no se sincronizará con el servidor, de todos modos ahí dice en el header de la app 
+const API_URL = "http://192.168.1.76:3000" //CAMBIAR ESTO POR LA IP DE LA RED  PARA QUE JALE EN IOS/ANDROID
 
 // Configuración del manejador de notificaciones
 Notifications.setNotificationHandler({
@@ -137,7 +138,7 @@ export default function QRScannerScreen() {
       console.error("Error procesando escaneo:", error)
       Alert.alert("Error", "No se pudo procesar el código escaneado")
     } finally {
-      // 🔓 LIBERAR DESPUÉS DEL TIMEOUT
+      //LIBERAR DESPUÉS DEL TIMEOUT
       scanTimeoutRef.current = setTimeout(() => {
         isProcessingRef.current = false
         console.log("Escaneo desbloqueado")
